@@ -158,10 +158,8 @@ def alert_on_moving_average(data, alert_interval, alert_threshold, alerts):
             del(alerts[label])
     return end
 
-
-if __name__ == '__main__':
-
-    options = parseArgs(sys.argv)
+def main(options):
+  
     stats = {}
 
     # now something in which to hold our alerts
@@ -196,4 +194,8 @@ if __name__ == '__main__':
         if (now - (datetime.timedelta(seconds=interval))) >= stats_start:
             stats.clear()
             stats_start = now
- 
+
+if __name__ == '__main__':
+
+    options = parseArgs(sys.argv)
+    log_parser.main (options)

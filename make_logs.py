@@ -15,6 +15,8 @@ def parseArgs (args):
     parser = argparse.ArgumentParser();
     parser.add_argument('--logfile', help="Log File to Patrol", default="/var/log/access.log")
     parser.add_argument('--max_size', help="Number of bytes before we rotate", default=100000)
+    parser.add_argument('--seed', help="Centisecond seed number for sleeping", default=20)
+    parser.add_argument('--lines', help="Total lines before we exit", default=3000)
     return parser.parse_args()
 
 def give_a_name():
@@ -44,7 +46,7 @@ def give_a_return():
 def give_a_size():
     return (random.randint(1,100000))   
 
-def create_rotating_log(path, max_size):
+def create_rotating_log(path, max_size, sleep_seed, lines):
     """
     Creates a rotating log
     """
@@ -55,7 +57,7 @@ def create_rotating_log(path, max_size):
     handler = RotatingFileHandler(path, maxBytes=max_size,
                                   backupCount=1)
     logger.addHandler(handler)
-    for i in range(30000):
+    for i in range(int(lines)):
         now = datetime.datetime.utcnow()
         timestamp = now.strftime("%d/%b/%Y:%H:%M:%S")
  
@@ -66,14 +68,18 @@ def create_rotating_log(path, max_size):
                                                                     give_a_return(),
                                                                     give_a_size())
         logger.info(message)
-        sleeptime = (random.randint(0,20) / float(100))
+        sleeptime = (random.randint(0,sleep_seed) / float(100))
         time.sleep(sleeptime)
+
+def main(options):
+    if os.path.isfile(options.logfile):
+        os.unlink(options.logfile)
+    create_rotating_log(options.logfile,options.max_size,options.seed,options.lines)
 
 
 if __name__ == '__main__':
     options = parseArgs(sys.argv)
-    if os.path.isfile(options.logfile):
-        os.unlink(options.logfile)
-    create_rotating_log(options.logfile,options.max_size)
+    main(options)
+
 
 
