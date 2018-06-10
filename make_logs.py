@@ -53,9 +53,9 @@ def create_rotating_log(path, max_size):
  
     # add a rotating handler
     handler = RotatingFileHandler(path, maxBytes=max_size,
-                                  backupCount=5)
+                                  backupCount=1)
     logger.addHandler(handler)
-    for i in range(30000):
+    for i in range(300):
         now = datetime.datetime.utcnow()
         timestamp = now.strftime("%d/%b/%Y:%H:%M:%S")
  
@@ -66,11 +66,14 @@ def create_rotating_log(path, max_size):
                                                                     give_a_return(),
                                                                     give_a_size())
         logger.info(message)
-        time.sleep(.1)
+        sleeptime = (random.randint(0,10) / 10)
+        time.sleep(sleeptime)
 
 
 if __name__ == '__main__':
     options = parseArgs(sys.argv)
+    if os.path.isfile(options.logfile):
+        os.unlink(options.logfile)
     create_rotating_log(options.logfile,options.max_size)
 
 

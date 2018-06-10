@@ -8,7 +8,7 @@ import os
 import sys
 import argparse
 from collections import deque, Counter
-from datetime import datetime, date, time, timedelta
+import datetime
 import re
 import time
 import pprint
@@ -61,6 +61,7 @@ def parse_log_line (line):
     l = pattern.match(line)
     # we didn't match for some reason
     if l == None:
+        print "No match"
         return None
     
     logtoks = l.groupdict()  
@@ -70,27 +71,28 @@ def parse_log_line (line):
     offset = int(zone_offset[-4:-2])*60 + int(zone_offset[-2:])
     if zone_offset[0] == "-":
         offset = -offset
-    logtoks['time'] = datetime.strptime(t, "%d/%b/%Y:%H:%M:%S") + timedelta(minutes=offset)
-
+    logtoks['time'] = datetime.datetime.strptime(t, "%d/%b/%Y:%H:%M:%S") + datetime.timedelta(minutes=offset)
     # Now break up the request
     rp = [
-        r'(?P<action>\S+)',
+        r'(?P<action>\S+)',        
         r'(?P<path>\S+)',
         r'(?P<http_vers>\S+)',
     ]
     pattern = re.compile(r'\s+'.join(rp)+r'\s*\Z')
     r = pattern.match(logtoks['request'])
     reqtoks = r.groupdict()
-    # del logtoks['request']
+    sectoks = reqtoks['path'].split("/")
+    logtoks['section'] = "/{}".format(sectoks[1])    
     logtoks.update(reqtoks)
     return (logtoks)
 
 # todo: screen out data that are too old
-def display_counters (data, time_window):
+def display_counters (data, start, end):
     high_score = Counter()
     for ticks in data:
         for tick in data[ticks]:
-            high_score[tick['path']] += 1
+            if tick['time'] >= start and tick['time'] < end:
+                high_score[tick['section']] += 1
     print high_score.most_common(1)
 
 if __name__ == '__main__':
@@ -105,11 +107,16 @@ if __name__ == '__main__':
     # now something in which to hold our alerts
     alerts = {}
 
-    pp = pprint.PrettyPrinter(indent=4)  
+    counter_start = datetime.datetime.utcnow()
+    alert_start = datetime.datetime.utcnow()
+
+    # pp = pprint.PrettyPrinter(indent=4)  
     for line in read_log_file(options.logfile):
+        now = datetime.datetime.utcnow()
         tokens = parse_log_line(line.rstrip("\n\r"))
         if tokens == None:
             pass
+        # makes it a lot easier to read debug
         tok_time = int(time.mktime(tokens['time'].timetuple()))
         if tok_time in counters_stats:
             counters_stats[tok_time].append(tokens)
@@ -119,4 +126,7 @@ if __name__ == '__main__':
             alerts_stats[tok_time].append(tokens)
         else:
             alerts_stats[tok_time] = [ tokens ] 
-        display_counters(counters_stats, options.stats_interval)
+        if (now - datetime.timedelta(seconds=options.stats_interval)) >= counter_start:
+            display_counters(counters_stats, counter_start, now)
+            counters_stats = {}
+            counter_start = now
