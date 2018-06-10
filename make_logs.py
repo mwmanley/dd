@@ -38,7 +38,7 @@ def give_a_path():
     return(path_string)
 
 def give_a_return():
-    code_array = [200,400,301,201]
+    code_array = [200,400,301,201,500]
     return (random.choice(code_array))
 
 def give_a_size():
@@ -55,7 +55,7 @@ def create_rotating_log(path, max_size):
     handler = RotatingFileHandler(path, maxBytes=max_size,
                                   backupCount=1)
     logger.addHandler(handler)
-    for i in range(300):
+    for i in range(30000):
         now = datetime.datetime.utcnow()
         timestamp = now.strftime("%d/%b/%Y:%H:%M:%S")
  
@@ -66,7 +66,7 @@ def create_rotating_log(path, max_size):
                                                                     give_a_return(),
                                                                     give_a_size())
         logger.info(message)
-        sleeptime = (random.randint(0,10) / 10)
+        sleeptime = (random.randint(0,500) / float(100))
         time.sleep(sleeptime)
 
 
