@@ -22,15 +22,11 @@ def parseArgs (args):
     return parser.parse_args()
 
 def read_log_file(logfile):
-    start = datetime.datetime.utcnow()
     try:
         current = open (logfile, "r")
         curino = os.fstat(current.fileno()).st_ino
         while True:
-            now = datetime.datetime.utcnow()
             while True:
-                if now - datetime.timedelta(seconds=1) >= start:
-                    yield None
                 line = current.readline()
                 if not line:
                     break
@@ -44,7 +40,8 @@ def read_log_file(logfile):
                     continue
             except IOError:
                 pass
-            time.sleep(.01)
+            yield None
+            time.sleep(.1)
     except IOError:
         print "Cannot open file {} for reading".format(logfile)     
 
@@ -126,30 +123,34 @@ def display_counters (data, start, end):
         (section, count) = high_scorers
         print "Most active section is {} with {} hits".format(section,count)
 
+    print "Total HTTP traffic: {} bytes".format(total_traffic)
+    print "Total hits: {}".format(sum(high_score.values()))
     print "The five most active hosts: "
     for k, v in ips.most_common(5):
         print "%20s:%7d" % (k,v)
-    print "Total HTTP traffic: {} bytes".format(total_traffic)
+
     print "HTTP status breakdown:"
     for k, v in sorted(status_codes.iteritems()):
         print "%20s:%7d" % (k,v)
     return end
 
 
-def alert_on_moving_average(data, start, end, alert_threshold, alerts):
+def alert_on_moving_average(data, alert_interval, alert_threshold, alerts):
+    start = datetime.datetime.utcnow() - datetime.timedelta(seconds=int(alert_interval))
+    end = datetime.datetime.utcnow()
     activity = Counter()
     label = 'activity'
     for ticks in data:
         for tick in data[ticks]:
             if tick['time'] >= start and tick['time'] < end:
-                activity[tick['section']] += 1
+                activity[tick['time']] += 1
     totals = sum(activity.values())
-    N = len(activity.items())
+    N = float(len(activity))
     if N == 0:
         avg = 0
     else:
         avg = totals/N
-    if avg >= alert_threshold:
+    if avg > alert_threshold:
         # we've already alerted
         if label not in alerts:
             # record for later, if needed
@@ -176,7 +177,6 @@ if __name__ == '__main__':
 
     now = datetime.datetime.utcnow()
     counter_start = now
-    alert_start = now
     stats_start = now
 
     # create an alarm so that if we are blocked for 
@@ -196,8 +196,8 @@ if __name__ == '__main__':
                 stats[tok_time] = [ tokens ]
         if (now - datetime.timedelta(seconds=int(options.stats_interval))) >= counter_start:
             counter_start = display_counters(stats, counter_start, now)
-        if (now - datetime.timedelta(seconds=int(options.alert_interval))) >= alert_start:
-            alert_start = alert_on_moving_average(stats, alert_start, now, options.alert_threshold, alerts)
+        alert_on_moving_average(stats, options.alert_interval, options.alert_threshold, alerts)
         if (now - (datetime.timedelta(seconds=interval))) >= stats_start:
             stats.clear()
+            stats_start = now
  

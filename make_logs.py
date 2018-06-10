@@ -14,7 +14,7 @@ import datetime
 def parseArgs (args):
     parser = argparse.ArgumentParser();
     parser.add_argument('--logfile', help="Log File to Patrol", default="/var/log/access.log")
-    parser.add_argument('--max_size', help="Number of bytes before we rotate", default=10000000)
+    parser.add_argument('--max_size', help="Number of bytes before we rotate", default=100000)
     return parser.parse_args()
 
 def give_a_name():
@@ -66,7 +66,7 @@ def create_rotating_log(path, max_size):
                                                                     give_a_return(),
                                                                     give_a_size())
         logger.info(message)
-        sleeptime = (random.randint(0,500) / float(100))
+        sleeptime = (random.randint(0,50) / float(100))
         time.sleep(sleeptime)
 
 
