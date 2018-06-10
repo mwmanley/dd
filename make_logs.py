@@ -66,7 +66,7 @@ def create_rotating_log(path, max_size):
                                                                     give_a_return(),
                                                                     give_a_size())
         logger.info(message)
-        sleeptime = (random.randint(0,50) / float(100))
+        sleeptime = (random.randint(0,20) / float(100))
         time.sleep(sleeptime)
 
 

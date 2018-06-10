@@ -145,11 +145,7 @@ def alert_on_moving_average(data, alert_interval, alert_threshold, alerts):
             if tick['time'] >= start and tick['time'] < end:
                 activity[tick['time']] += 1
     totals = sum(activity.values())
-    N = float(len(activity))
-    if N == 0:
-        avg = 0
-    else:
-        avg = totals/N
+    avg = totals/float(alert_interval)
     if avg > alert_threshold:
         # we've already alerted
         if label not in alerts:
