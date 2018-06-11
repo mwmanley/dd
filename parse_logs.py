@@ -197,11 +197,8 @@ def start_parsing (stats_interval,alert_interval,logfile,alert_threshold,debug):
             if debug > 0:
                 break
 
-def main(options):
-    start_parsing(options.stats_interval,options.alert_interval,options.logfile,options.alert_threshold,options.debug)
-
-
 if __name__ == '__main__':
 
     options = parseArgs(sys.argv)
-    main (options)
+    start_parsing(options.stats_interval,options.alert_interval,
+                  options.logfile,options.alert_threshold,options.debug)
