@@ -19,6 +19,7 @@ def parseArgs (args):
     parser.add_argument('--stats_interval', help="Intervals for Stats in seconds", default=10)
     parser.add_argument('--alert_threshold', help="High Water Mark for Hits", default=10)
     parser.add_argument('--alert_interval', help="Intervals for Alerting in seconds", default=120)
+    parser.add_argument('--debug', help="Do not run in an infinite loop for debugging", default=0)
     return parser.parse_args()
 
 def read_log_file(logfile):
@@ -158,8 +159,7 @@ def alert_on_moving_average(data, alert_interval, alert_threshold, alerts):
             del(alerts[label])
     return end
 
-def main(options):
-  
+def start_parsing (stats_interval,alert_interval,logfile,alert_threshold,debug):    
     stats = {}
 
     # now something in which to hold our alerts
@@ -167,7 +167,7 @@ def main(options):
 
     # this is arbitrary, but keep the stats hash from getting 
     # unmanagably large
-    interval = int(options.stats_interval) * int(options.alert_interval)
+    interval = int(stats_interval) * int(alert_interval)
 
     now = datetime.datetime.utcnow()
     counter_start = now
@@ -176,7 +176,7 @@ def main(options):
     # create an alarm so that if we are blocked for 
     # more than the stats interval we can just say
     # that nothing happened 
-    for line in read_log_file(options.logfile):
+    for line in read_log_file(logfile):
         now = datetime.datetime.utcnow()
         if line != None:
             tokens = parse_log_line(line.rstrip("\n\r"))
@@ -188,14 +188,20 @@ def main(options):
                 stats[tok_time].append(tokens)
             else:
                 stats[tok_time] = [ tokens ]
-        if (now - datetime.timedelta(seconds=int(options.stats_interval))) >= counter_start:
+        if (now - datetime.timedelta(seconds=int(stats_interval))) >= counter_start:
             counter_start = display_counters(stats, counter_start, now)
-        alert_on_moving_average(stats, options.alert_interval, options.alert_threshold, alerts)
+        alert_on_moving_average(stats, alert_interval, alert_threshold, alerts)
         if (now - (datetime.timedelta(seconds=interval))) >= stats_start:
             stats.clear()
             stats_start = now
+            if debug > 0:
+                break
+
+def main(options):
+    start_parsing(options.stats_interval,options.alert_interval,options.logfile,options.alert_threshold,options.debug)
+
 
 if __name__ == '__main__':
 
     options = parseArgs(sys.argv)
-    log_parser.main (options)
+    main (options)

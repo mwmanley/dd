@@ -3,36 +3,30 @@
 # run unit testing
 
 import unittest
-from subprocess import call
+import make_logs 
+import parse_logs 
 import os
-from make_logs import *
-from parse_logs import *
+import sys
 
-log_options={
-    'logfile': '/tmp/access.log',
-    'max_size': '3000',
-    'seed': '20',
-    'lines': '3000'
-}
-
-parse_options={
-    'logfile': '/tmp/access.log',
-    'stats_interval': '10',
-    'alert_interval': '120',
-    'alert_threshold': '10'
-}
 
 class BasicFunctionTest(unittest.TestCase):
 
     def setUp(self):
-        parse_logs.main(parse_options)
-        make_logs.main(log_options)
-       
+        make_logs.create_rotating_log('/tmp/access.log', 3000, 20, 30)
+        parse_logs.start_parsing (10,4,'/tmp/access.log',3,1)
 
     
     def test_access_log(self):
         assert os.path.isfile('/tmp/access.log')
+    
+    def test_high_traffic(self):
+        output = sys.stdout.getvalue().strip()
+        self.assertRegexpMatches(output,'High traffic generated an alert')
+
+    def test_high_traffic_clear(self):
+        output = sys.stdout.getvalue().strip()
+        self.assertRegexpMatches(output,'Cleared high traffic generated alert')        
 
 
 if __name__ == '__main__':
-    unittest.main(buffer=True)
+    unittest.main(buffer=False)
